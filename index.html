@@ -107,6 +107,23 @@ background:radial-gradient(circle at 50% -5%,#214b67 0,#0a1421 38%,#03060b 100%)
   .fipHeader{font-size:11px;padding:6px 11px;top:6px}
 }
 
+/* LIVE LEADERBOARD */
+.leaderboardOverlay{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:80;padding:18px}
+.leaderboardPanel{width:min(620px,96vw);max-height:82vh;overflow:auto;background:linear-gradient(145deg,#182d46,#091522);border:2px solid var(--gold);border-radius:24px;padding:24px;box-shadow:0 25px 90px #000;animation:leaderPop .35s ease}
+.leaderTitle{text-align:center;color:var(--gold);font-size:27px;font-weight:900;margin-bottom:5px}
+.leaderSub{text-align:center;color:#c8d5e8;font-size:14px;margin-bottom:17px}
+.leaderRow{display:grid;grid-template-columns:48px 1fr 90px 70px;gap:8px;align-items:center;background:#102238;border:1px solid #304967;border-radius:13px;padding:11px 12px;margin:7px 0;font-weight:800}
+.leaderRow.me{border-color:var(--gold);background:#2a2412}
+.leaderRank{font-size:22px;text-align:center}
+.leaderName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.leaderScore{text-align:right;color:var(--gold)}
+.leaderLevel{text-align:right;color:var(--cyan);font-size:13px}
+.leaderEmpty{text-align:center;color:#b8c8dc;padding:25px}
+.finalBoard{max-width:620px;margin:25px auto}
+.finalBoard h2{color:var(--gold)}
+@keyframes leaderPop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@media(max-width:600px){.leaderboardPanel{padding:17px}.leaderRow{grid-template-columns:38px 1fr 72px 55px;font-size:13px;padding:9px}.leaderTitle{font-size:23px}}
+
 .clueChoice{font-size:16px!important;padding:14px 12px!important;}
 #clueOptions .secondary{min-height:52px;}</style>
 </head>
@@ -148,6 +165,7 @@ background:radial-gradient(circle at 50% -5%,#214b67 0,#0a1421 38%,#03060b 100%)
 <h1>THE COSTING TREASURE!</h1>
 <p id="finalTeam"></p>
 <div class="big" id="finalScore">₹0</div>
+<div id="finalLeaderboard" class="finalBoard"></div>
 <div class="treasure"><span class="gold">🪙</span><span class="gold">🪙</span><span class="gold">🪙</span><div class="cash">💵 ₹50,000 BONUS</div></div>
 <p class="lead">Congratulations! Your team recovered all five keys and solved the final costing case. The master costing file is restored.</p>
 <p class="small">🏆 COSTING DETECTIVE • LABOUR HOUR RATE CASE CLOSED</p>
@@ -164,7 +182,91 @@ background:radial-gradient(circle at 50% -5%,#214b67 0,#0a1421 38%,#03060b 100%)
 </div>
 </div>
 
+<div class="leaderboardOverlay" id="leaderboardOverlay">
+  <div class="leaderboardPanel">
+    <div class="leaderTitle">🏆 LIVE LEADERBOARD</div>
+    <div class="leaderSub" id="leaderSub">Current positions • Next challenge in 5 seconds</div>
+    <div id="leaderRows"></div>
+  </div>
+</div>
+
 <script>
+const SUPABASE_URL="https://zzfxyhgjlycfzfoptjec.supabase.co";
+const SUPABASE_KEY="sb_publishable_zgJ27q7aYLyIefRuQnr-Qg_EGG6aLLC";
+const LEADERBOARD_TABLE="live_leaderboard";
+const GAME_ID="costing-"+new Date().toLocaleDateString("en-CA");
+let sessionId=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2));
+
+async function sbRequest(path,options={}){
+  const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",...(options.headers||{})};
+  const res=await fetch(SUPABASE_URL+"/rest/v1/"+path,{...options,headers});
+  if(!res.ok){const t=await res.text();throw new Error(t||("Supabase error "+res.status));}
+  return res.status===204?null:res.json();
+}
+
+function currentProgressStatus(){return room>=5?"final":"playing"}
+async function publishProgress(){
+  if(!team)return;
+  try{
+    await sbRequest(LEADERBOARD_TABLE+"?on_conflict=session_id%2Cteam_name",{
+      method:"POST",
+      headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
+      body:JSON.stringify({session_id:GAME_ID+"-"+sessionId,team_name:team,score:score,level:room+1,keys:keys,status:currentProgressStatus(),updated_at:new Date().toISOString()})
+    });
+  }catch(e){console.warn("Leaderboard update failed",e)}
+}
+
+async function getLeaderboard(){
+  try{
+    const since=new Date(Date.now()-20*60*1000).toISOString();
+    const query=LEADERBOARD_TABLE+"?select=team_name,score,level,keys,status,updated_at&session_id=eq."+encodeURIComponent(GAME_ID+"-" )+"&updated_at=gte."+encodeURIComponent(since)+"&order=score.desc,keys.desc,level.desc,updated_at.asc";
+    // The query above cannot match the random session suffix, so fetch today's recent rows and filter by date prefix client-side.
+    const all=await sbRequest(LEADERBOARD_TABLE+"?select=session_id,team_name,score,level,keys,status,updated_at&updated_at=gte."+encodeURIComponent(since)+"&order=score.desc,keys.desc,level.desc,updated_at.asc");
+    return all.filter(x=>String(x.session_id||"").startsWith(GAME_ID+"-"));
+  }catch(e){console.warn("Leaderboard read failed",e);return []}
+}
+
+function rankIcon(i){return i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1)+"️⃣"}
+function renderLeaderboard(rows){
+  const box=document.getElementById("leaderRows");
+  if(!rows.length){box.innerHTML='<div class="leaderEmpty">Waiting for other teams to join...</div>';return;}
+  box.innerHTML=rows.map((r,i)=>`<div class="leaderRow ${r.team_name===team?"me":""}">
+    <div class="leaderRank">${rankIcon(i)}</div><div class="leaderName">${escapeHtml(r.team_name)}${r.team_name===team?" <span style=\"color:var(--gold)\">YOU</span>":""}</div><div class="leaderScore">${Number(r.score||0)} pts</div><div class="leaderLevel">L${r.level||1} • 🔑${r.keys||0}</div>
+  </div>`).join("");
+}
+function renderFinalLeaderboard(rows){
+ const box=document.getElementById("finalLeaderboard");
+ if(!rows.length){box.innerHTML="";return;}
+ box.innerHTML='<h2>🏆 FINAL TOP 3</h2>'+rows.slice(0,3).map((r,i)=>`<div class="leaderRow ${r.team_name===team?"me":""}"><div class="leaderRank">${rankIcon(i)}</div><div class="leaderName">${escapeHtml(r.team_name)}</div><div class="leaderScore">${Number(r.score||0)} pts</div><div class="leaderLevel">🔑${r.keys||0}</div></div>`).join("");
+}
+function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'\"':"&quot;"}[c]));}
+
+let leaderboardTimer=null;
+async function showLiveLeaderboard(){
+  const overlay=document.getElementById("leaderboardOverlay");
+  const sub=document.getElementById("leaderSub");
+  overlay.style.display="flex";
+  let remaining=5;
+  sub.textContent="Current positions • Next challenge in "+remaining+" seconds";
+  renderLeaderboard(await getLeaderboard());
+  clearInterval(leaderboardTimer);
+  leaderboardTimer=setInterval(async()=>{
+    remaining--;
+    if(remaining<=0){
+      clearInterval(leaderboardTimer);
+      overlay.style.display="none";
+      showUnlock();
+      return;
+    }
+    sub.textContent="Current positions • Next challenge in "+remaining+" seconds";
+    renderLeaderboard(await getLeaderboard());
+  },1000);
+}
+
+async function refreshLeaderboardOnly(){
+  renderFinalLeaderboard(await getLeaderboard());
+}
+
 const rooms=[
  {name:"Production Records",icon:"📋",tag:"LEVEL 1 • PRODUCTION FLOOR",type:"records",
   desc:"StyleStitch Garments makes school uniforms, formal shirts and designer jackets. The production manager has one problem: the factory overhead must be assigned using a basis that reflects labour effort.",
@@ -231,6 +333,7 @@ function render(){
 }
 function rewardKey(){
  keys++;score+=100;document.getElementById("keyCount").textContent=keys;document.getElementById("score").textContent=score;
+ publishProgress();
 }
 function feedback(ok,msg){
  let f=document.createElement("div");f.className="feedback "+(ok?"good":"bad");f.innerHTML=msg;document.getElementById("content").appendChild(f);
@@ -247,7 +350,7 @@ function showKey(){
 
  setTimeout(()=>{
    rewardKey();
-   showUnlock();
+   showLiveLeaderboard();
  },1850);
 }
 
@@ -306,6 +409,7 @@ function chooseNextRoom(i){
 
    setTimeout(()=>{
      room++;
+     publishProgress();
      render();
      window.scrollTo({top:0,behavior:"smooth"});
    },900);
@@ -391,16 +495,17 @@ function boss(c){
 function bossCheck(){
  if(locked)return;
  let v=document.getElementById("bossAns").value.replace(/₹|,/g,"").trim();
- if(v==="800"){score+=100;document.getElementById("score").textContent=score;locked=true;setTimeout(finish,500)}
+ if(v==="800"){score+=100;document.getElementById("score").textContent=score;locked=true;publishProgress();setTimeout(finish,500)}
  else{let f=document.createElement("div");f.className="feedback bad";f.innerHTML="The final lock requires you to work through the new case: first discover the Labour Hour Rate, then determine Job X's absorbed overhead.";document.getElementById("content").appendChild(f)}
 }
-function finish(){
- clearInterval(timer);document.getElementById("hunt").style.display="none";document.getElementById("final").style.display="block";
+async function finish(){
+ clearInterval(timer);await publishProgress();document.getElementById("hunt").style.display="none";document.getElementById("final").style.display="block";
  document.getElementById("finalTeam").textContent="Team: "+team;
  document.getElementById("finalScore").textContent="₹"+(50000+score*10).toLocaleString("en-IN");
+ await refreshLeaderboardOnly();
 }
-function timeUp(){
- clearInterval(timer);document.getElementById("hunt").style.display="none";document.getElementById("final").style.display="block";
+async function timeUp(){
+ clearInterval(timer);await publishProgress();document.getElementById("hunt").style.display="none";document.getElementById("final").style.display="block";
  document.getElementById("finalTeam").textContent="Team: "+team;
  document.getElementById("finalScore").textContent="TREASURE LOCKED";
  document.querySelector(".final h1").textContent="TIME IS UP";
