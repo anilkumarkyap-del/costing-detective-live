@@ -122,19 +122,87 @@ background:radial-gradient(circle at 50% -5%,#214b67 0,#0a1421 38%,#03060b 100%)
 .leaderEmpty{text-align:center;color:#b8c8dc;padding:25px}
 
 
-.podiumStage{position:relative;max-width:760px;margin:8px auto 10px;overflow:hidden;border-radius:20px;border:1px solid #46617f;box-shadow:0 18px 60px #0008;background:#08111e}
-.podiumStage img{display:block;width:100%;height:auto}
-.podiumName{position:absolute;z-index:3;transform:translateX(-50%);text-align:center;background:rgba(4,8,14,.94);border:1px solid var(--gold);border-radius:10px;padding:7px 10px;min-width:130px;max-width:29%;box-shadow:0 6px 20px #0008}
-.podiumName b{display:block;color:#fff;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.podiumName small{display:block;color:var(--gold);font-size:9px;font-weight:900;letter-spacing:.6px;margin-top:3px;white-space:nowrap}
-.podiumFirst{left:50%;bottom:10%;min-width:150px}
-.podiumSecond{left:18%;bottom:9%}
-.podiumThird{left:82%;bottom:9%}
+.podiumStage{
+  position:relative;max-width:760px;height:315px;margin:8px auto 10px;
+  overflow:hidden;border-radius:20px;border:1px solid #46617f;
+  box-shadow:0 18px 60px #0008;
+  background:radial-gradient(circle at 50% 10%,#254c68 0,#10253a 42%,#07101c 100%);
+}
+.podiumStage:before{
+  content:"🎉  WINNER'S PODIUM  🎉";position:absolute;top:13px;left:50%;
+  transform:translateX(-50%);color:var(--gold);font-weight:1000;
+  letter-spacing:2px;font-size:14px;white-space:nowrap;
+}
+.danceFloor{
+  position:absolute;left:5%;right:5%;bottom:47px;height:20px;border-radius:50%;
+  background:#0007;filter:blur(2px);
+}
+.dancer{
+  position:absolute;z-index:2;bottom:76px;text-align:center;transform-origin:bottom center;
+}
+.dancer .character{
+  display:block;font-size:70px;line-height:1;filter:drop-shadow(0 8px 7px #0009);
+}
+.dancer .confetti{
+  position:absolute;font-size:18px;top:-15px;left:50%;
+  animation:confettiFloat 1.2s ease-in-out infinite alternate;
+}
+.dancer.first{left:50%;transform:translateX(-50%);animation:danceCenter .55s ease-in-out infinite alternate}
+.dancer.second{left:20%;animation:danceSideLeft .62s ease-in-out infinite alternate}
+.dancer.third{right:20%;animation:danceSideRight .68s ease-in-out infinite alternate}
+.dancer.first .character{font-size:86px}
+.dancer.second .character,.dancer.third .character{font-size:72px}
+.dancer.second{animation-delay:.12s}.dancer.third{animation-delay:.24s}
+@keyframes danceCenter{
+  0%{transform:translateX(-50%) translateY(0) rotate(-5deg) scale(1)}
+  50%{transform:translateX(-50%) translateY(-15px) rotate(5deg) scale(1.05)}
+  100%{transform:translateX(-50%) translateY(0) rotate(-5deg) scale(1)}
+}
+@keyframes danceSideLeft{
+  0%{transform:translateY(0) rotate(-9deg) scale(1)}
+  50%{transform:translateY(-13px) rotate(9deg) scale(1.06)}
+  100%{transform:translateY(0) rotate(-9deg) scale(1)}
+}
+@keyframes danceSideRight{
+  0%{transform:translateY(0) rotate(9deg) scale(1)}
+  50%{transform:translateY(-13px) rotate(-9deg) scale(1.06)}
+  100%{transform:translateY(0) rotate(9deg) scale(1)}
+}
+@keyframes confettiFloat{
+  0%{transform:translate(-50%,0) rotate(-10deg)}
+  100%{transform:translate(-50%,-13px) rotate(12deg)}
+}
+.podiumBlock{
+  position:absolute;bottom:0;height:65px;border-radius:12px 12px 0 0;
+  border:1px solid #58718d;border-bottom:0;text-align:center;
+  font-weight:1000;color:#fff;padding-top:8px;
+  background:linear-gradient(#314b66,#17283b);
+}
+.podiumBlock b{display:block;color:var(--gold);font-size:20px}
+.podiumBlock.second{left:7%;width:27%;height:58px}
+.podiumBlock.first{left:36.5%;width:27%;height:92px;background:linear-gradient(#5b4920,#2a2414)}
+.podiumBlock.third{right:7%;width:27%;height:48px}
+.podiumName{
+  position:absolute;z-index:4;transform:translateX(-50%);text-align:center;
+  background:rgba(4,8,14,.94);border:1px solid var(--gold);border-radius:10px;
+  padding:6px 9px;min-width:125px;max-width:28%;box-shadow:0 6px 20px #0008;
+}
+.podiumName b{display:block;color:#fff;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.podiumName small{display:block;color:var(--gold);font-size:8px;font-weight:900;letter-spacing:.5px;margin-top:3px;white-space:nowrap}
+.podiumFirst{left:50%;bottom:8px;min-width:145px}
+.podiumSecond{left:20.5%;bottom:8px}
+.podiumThird{left:79.5%;bottom:8px}
 @media(max-width:600px){
- .podiumName{padding:5px 7px;min-width:92px}
- .podiumName b{font-size:12px}
- .podiumName small{font-size:7px}
- .podiumFirst{min-width:105px}
+ .podiumStage{height:270px}
+ .dancer .character{font-size:56px}
+ .dancer.first .character{font-size:68px}
+ .dancer.second .character,.dancer.third .character{font-size:58px}
+ .dancer.second{left:19%}.dancer.third{right:19%}
+ .podiumName{padding:5px 6px;min-width:78px}
+ .podiumName b{font-size:10px}
+ .podiumName small{font-size:6px}
+ .podiumFirst{min-width:92px}
+ .podiumBlock b{font-size:16px}
 }
 
 .winnerCelebration{max-width:760px;margin:8px auto 8px;position:relative}
@@ -328,7 +396,13 @@ function renderFinalLeaderboard(rows){
 
  box.innerHTML=`<div class="winnerCelebration">
    <div class="podiumStage">
-     <img src="true-dance-podium.gif" alt="Final winners celebration">
+     <div class="danceFloor"></div>
+     <div class="dancer second"><span class="confetti">✨</span><span class="character">🐭</span></div>
+     <div class="dancer first"><span class="confetti">🎉</span><span class="character">🐱</span></div>
+     <div class="dancer third"><span class="confetti">✨</span><span class="character">🐶</span></div>
+     <div class="podiumBlock second"><b>🥈</b></div>
+     <div class="podiumBlock first"><b>🥇</b></div>
+     <div class="podiumBlock third"><b>🥉</b></div>
      <div class="podiumName podiumSecond">
        <b>${escapeHtml(top[1]?.team_name || "—")}</b>
        <small>${titles[1]}</small>
