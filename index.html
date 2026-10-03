@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Costing Detective — The Great Treasure Hunt</title>
+<style>
+:root{
+ --bg:#050911;--panel:#0e1828;--card:#13243a;--line:#314967;--text:#eef6ff;
+ --muted:#aebed3;--cyan:#62e6d2;--blue:#63a4ff;--gold:#f6c453;--green:#53df83;
+ --red:#ff718a;--purple:#a78bfa;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);
+background:radial-gradient(circle at 50% -5%,#214b67 0,#0a1421 38%,#03060b 100%);min-height:100vh}
+.wrap{max-width:1150px;margin:auto;padding:18px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.brand{font-size:12px;font-weight:900;letter-spacing:2px;color:var(--cyan)}
+.hud{display:none;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pill{background:#081220;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-weight:800}
+.pill b{color:var(--gold)}
+.screen{background:linear-gradient(145deg,#14273df5,#0a1423f7);border:1px solid #314965;border-radius:25px;box-shadow:0 24px 90px #0009;overflow:hidden}
+.start{text-align:center;padding:58px 24px}
+.heroFactory{font-size:82px;animation:float 2.5s ease-in-out infinite}
+.start h1{font-size:clamp(36px,6vw,68px);margin:9px 0 12px}
+.lead{max-width:770px;margin:0 auto 24px;color:#c9d6e8;line-height:1.7;font-size:18px}
+.input{width:min(450px,100%);background:#050c15;color:white;border:1px solid #405a78;border-radius:13px;padding:14px 16px;font-size:17px;outline:none}
+.primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#06111d;padding:14px 23px;border-radius:13px;font-weight:900;box-shadow:0 10px 28px #0005;cursor:pointer;border:0}
+.secondary{background:#223650;color:#fff;padding:12px 18px;border-radius:12px;font-weight:800;cursor:pointer;border:1px solid #3b5574}
+.small{color:var(--muted)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#hunt{display:none}
+.head{padding:20px 22px 11px}
+.titleRow{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.tag{font-size:12px;color:var(--cyan);font-weight:900;letter-spacing:1.5px}
+.titleRow h2{margin:4px 0;font-size:30px}
+.bar{height:8px;background:#050c15;border-radius:20px;overflow:hidden;margin-top:14px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:.6s}
+.map{padding:19px 22px 22px;background:#091321;border-top:1px solid #263b55;border-bottom:1px solid #263b55}
+.mapTitle{display:flex;justify-content:space-between;gap:10px;margin-bottom:12px}
+.mapTitle b{font-size:18px}
+.lockerMap{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.locker{min-height:94px;border:1px solid #344e6e;background:#112139;border-radius:15px;padding:8px;text-align:center;position:relative;transition:.5s}
+.locker .icon{font-size:31px}.locker small{display:block;color:#b9c8db;font-weight:800;margin-top:3px}
+.locker.locked{opacity:.4;filter:grayscale(.8)}
+.locker.current{border-color:var(--gold);box-shadow:0 0 0 2px #f6c45322,0 0 25px #f6c45322;animation:pulse 1.6s infinite}
+.locker.open{background:#0e2e23;border-color:var(--green)}
+.status{font-size:10px;color:var(--gold);font-weight:900;margin-top:4px}
+@keyframes pulse{50%{box-shadow:0 0 0 5px #f6c45312,0 0 32px #f6c45322}}
+.content{padding:26px}
+.mission{max-width:950px;margin:auto}
+.desc{color:#c8d5e8;line-height:1.65}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:20px 0}
+.card{background:#13263d;border:1px solid #38526f;border-radius:17px;padding:19px;transition:.2s}
+.card h3{margin:0 0 8px}.card p{color:#b8c8dc;line-height:1.55}
+.clickCard{cursor:pointer}.clickCard:hover{transform:translateY(-3px);border-color:var(--cyan)}
+.clickCard.selected{border-color:var(--gold);background:#2b2410}
+.choiceGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:20px 0}
+.choice{background:#14283f;border:1px solid #3a5574;color:#fff;border-radius:15px;padding:17px;text-align:left;font-weight:900;cursor:pointer}
+.choice:hover{border-color:var(--cyan)}.choice.correct{background:#103625;border-color:var(--green)}.choice.wrong{background:#3c1723;border-color:var(--red)}
+.lockbox{max-width:500px;margin:20px auto;background:#07111d;border:1px solid #344d6b;border-radius:18px;padding:20px;text-align:center}
+.display{font-size:30px;letter-spacing:8px;color:var(--cyan);background:#030810;border:1px solid #344a63;border-radius:10px;padding:12px;margin:10px 0}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.keys button{background:#1a2e47;color:#fff;border:1px solid #3c5777;padding:13px;border-radius:10px;font-weight:900;cursor:pointer}.keys .ok{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#06111d}.keys .clear{background:#652238}
+.answer{background:#050c15;color:#fff;border:1px solid #405a78;border-radius:12px;padding:13px;text-align:center;font-size:20px;width:210px}
+.feedback{padding:16px;border-radius:15px;line-height:1.6;margin:15px auto;max-width:850px}
+.good{background:#0d3322;border:1px solid #2d8d56}.bad{background:#3a1722;border:1px solid #a73e57}
+.next{text-align:center;margin:18px}.reveal{text-align:center;color:var(--gold);font-size:21px;font-weight:900}
+.quote{border-left:4px solid var(--gold);background:#191710;padding:18px;border-radius:0 14px 14px 0;line-height:1.6;font-size:18px}
+.calcCard{background:#0a1422;border:1px solid #304967;border-radius:18px;padding:22px;text-align:center}
+.formulaHint{font-size:18px;color:#d5e1f0}
+.final{display:none;text-align:center;padding:52px 22px}
+.chest{font-size:105px;animation:chestBounce 1.4s ease-in-out infinite}
+@keyframes chestBounce{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(-2deg)}}
+.final h1{font-size:clamp(38px,6vw,66px);margin:5px}
+.big{font-size:68px;font-weight:900;color:var(--gold)}
+.treasure{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin:22px 0}
+.gold{font-size:48px;animation:coin 1.2s ease-in-out infinite alternate}.gold:nth-child(2){animation-delay:.2s}.gold:nth-child(3){animation-delay:.4s}
+.cash{background:#0e3a26;border:2px solid var(--green);padding:12px 20px;border-radius:12px;color:#a7f3d0;font-size:21px;font-weight:900}
+.keyAnimation{position:relative;height:220px;margin:10px auto 0;max-width:620px;display:none}
+.keyGlow{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:105px;filter:drop-shadow(0 0 20px #f6c453);animation:keyPop 1.8s ease forwards}
+@keyframes keyPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.1) rotate(-90deg)}45%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(12deg)}75%{transform:translate(-50%,-50%) scale(1) rotate(0)}100%{transform:translate(-50%,-50%) scale(1) rotate(0)}}
+.ring{font-size:30px;color:var(--gold);margin-top:5px}
+.lockerUnlock{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:50}
+.unlockPanel{width:min(500px,90%);background:linear-gradient(145deg,#182c43,#0b1626);border:1px solid #46617f;border-radius:22px;padding:30px;text-align:center;box-shadow:0 25px 80px #000}
+.unlockIcon{font-size:80px;animation:unlock .9s ease}.unlockText{font-size:26px;font-weight:900;color:var(--green)}
+@keyframes unlock{0%{transform:rotate(-25deg) scale(.5)}50%{transform:rotate(12deg) scale(1.2)}100%{transform:rotate(0) scale(1)}}
+@media(max-width:800px){.lockerMap{grid-template-columns:repeat(3,1fr)}.board,.choiceGrid{grid-template-columns:1fr}.content{padding:18px}.titleRow h2{font-size:25px}}
+
+.fipHeader{
+  position:fixed;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:100;
+  background:rgba(5,9,17,.88);
+  border:1px solid #46617f;
+  border-radius:999px;
+  padding:7px 16px;
+  color:#f6c453;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:1px;
+  box-shadow:0 8px 24px #0007;
+  white-space:nowrap;
+}
+@media(max-width:600px){
+  .fipHeader{font-size:11px;padding:6px 11px;top:6px}
+}
+
+.clueChoice{font-size:16px!important;padding:14px 12px!important;}
+#clueOptions .secondary{min-height:52px;}</style>
+</head>
+<body>
+<div class="fipHeader">FIP-18 • KSHEA Dharwad</div>
+<div class="wrap">
+<div class="top">
+<div class="brand">COSTING DETECTIVE • THE GREAT TREASURE HUNT</div>
+<div class="hud" id="hud"><div class="pill">TEAM <b id="teamHud">—</b></div><div class="pill">⏱ <b id="clock">12:00</b></div><div class="pill">💰 <b id="score">0</b></div><div class="pill">🗝️ <b id="keyCount">0</b>/5</div></div>
+</div>
+
+<section class="screen" id="start">
+<div class="start">
+<div class="heroFactory">🏭🗺️🔎</div>
+<div class="brand">STYLESTITCH GARMENTS • SECRET COSTING MISSION</div>
+<h1>The Missing Costing Treasure</h1>
+<p class="lead">StyleStitch Garments has lost its master costing file. Five keys are hidden inside the factory. Follow the story, solve each case, collect the keys and use them to unlock the next locker. The final locker contains the costing treasure.</p>
+<input class="input" id="team" placeholder="Enter your team name">
+<br><br><button class="primary" onclick="begin()">🗺️ BEGIN THE TREASURE HUNT</button>
+<p class="small">12 minutes • Team mission • 5 keys • 1 final treasure</p>
+</div>
+</section>
+
+<section class="screen" id="hunt">
+<div class="head">
+<div class="titleRow"><div><div class="tag" id="tag"></div><h2 id="title"></h2></div><div class="pill">LEVEL <b id="level">1</b>/6</div></div>
+<div class="bar"><i id="bar"></i></div>
+</div>
+<div class="map">
+<div class="mapTitle"><b>🗺️ FACTORY LOCKER MAP</b><span class="small">Solve → Get Key → Unlock Next Locker</span></div>
+<div class="lockerMap" id="lockerMap"></div>
+</div>
+<div class="content"><div class="mission"><p class="desc" id="desc"></p><div id="content"></div></div></div>
+</section>
+
+<section class="screen final" id="final">
+<div class="chest">🎁</div>
+<div class="brand">TREASURE CHEST UNLOCKED</div>
+<h1>THE COSTING TREASURE!</h1>
+<p id="finalTeam"></p>
+<div class="big" id="finalScore">₹0</div>
+<div class="treasure"><span class="gold">🪙</span><span class="gold">🪙</span><span class="gold">🪙</span><div class="cash">💵 ₹50,000 BONUS</div></div>
+<p class="lead">Congratulations! Your team recovered all five keys and solved the final costing case. The master costing file is restored.</p>
+<p class="small">🏆 COSTING DETECTIVE • LABOUR HOUR RATE CASE CLOSED</p>
+<br><button class="primary" onclick="location.reload()">🔄 PLAY AGAIN</button>
+</section>
+</div>
+
+<div class="lockerUnlock" id="unlock">
+<div class="unlockPanel">
+<div class="unlockIcon">🗝️</div>
+<div class="unlockText" id="unlockText">KEY FOUND!</div>
+<p id="unlockSub">The next locker is opening...</p>
+<div style="font-size:60px" id="unlockLocker">🔒</div>
+</div>
+</div>
+
+<script>
+const rooms=[
+ {name:"Production Records",icon:"📋",tag:"LEVEL 1 • PRODUCTION FLOOR",type:"records",
+  desc:"StyleStitch Garments makes school uniforms, formal shirts and designer jackets. The production manager has one problem: the factory overhead must be assigned using a basis that reflects labour effort.",
+  correct:"hours"},
+ {name:"Worker Locker",icon:"👷",tag:"LEVEL 2 • WORKER LOCKER",type:"worker",
+  desc:"Two job cards are in the lockers. If The same Labour Hour Rate is used for both jobs (For Example Rs.15/Hour). Which job will get more overhead?.",
+  correct:"B"},
+ {name:"Costing Vault",icon:"🔐",tag:"LEVEL 3 • COSTING VAULT",type:"vault",
+  desc:"The accounts department has locked the factory overhead records in a digital vault. The vault will open only when you discover the Labour Hour Rate.",
+  correct:"20"},
+ {name:"Accountant's Office",icon:"🕵️",tag:"LEVEL 4 • ACCOUNTANT'S OFFICE",type:"accountant",
+  desc:"You found a costing sheet and a note from the accountant.The company is using the Labour Hour Rate method.But the accountant has made a mistake.Find the mistake and get the fourth key! 🔑.",
+  correct:"base"},
+ {name:"Job Costing Room",icon:"💰",tag:"LEVEL 5 • JOB COSTING ROOM",type:"job",
+  desc:"The production supervisor gives you a missing job file. The file contains the labour time and the absorption rate, but the overhead amount has been erased. Recover the missing amount without being given the calculation.",
+  correct:"500"},
+ {name:"Treasure Chamber",icon:"🏆",tag:"FINAL LEVEL • TREASURE CHAMBER",type:"boss",
+  desc:"The final locker is open, but the treasure chest has one last case. A new production unit has sent fresh figures. Solve the complete case to open the chest.",
+  correct:"800"}
+];
+
+
+const nextClues=[
+ {text:"Great start! 🔑 Now let's follow the workers' job details. Where would you find information about the time taken for different jobs?", options:["🏭 Work Floor","💼 Accountant's Office","📂 Job Records Room","🔐 Costing Vault"], answer:2},
+ {text:"Enough looking at clothes! 👕 Now we need numbers. Where would the factory keep its important costing figures?", options:["🏭 Work Floor","📂 Job Records Room","📢 Marketing Department","🔐 Costing Vault"], answer:3},
+ {text:"If numbers could talk, they would probably ask for the accountant! 😄 Something doesn't look right in the costing records. Where should we investigate next?", options:["🏭 Work Floor","🔐 Costing Vault","📂 Job Records Room","💼 Accountant's Office"], answer:3},
+ {text:"One job has lost something important… and it isn't the worker! 😄 A job file is missing its overhead amount. Where should we look?", options:["🔐 Costing Vault","📢 Marketing Department","🏭 Work Floor","📂 Job Costing Room"], answer:3},
+ {text:"Five keys collected! 🔑 Only one case is left. The final costing file is waiting. Where should we go next?", options:["💼 Accountant's Office","📂 Job Costing Room","🔐 Costing Vault","🏆 Final Costing Challenge"], answer:3}
+];
+
+let room=0,score=0,keys=0,time=720,team="",locked=false,timer,code="";
+
+function begin(){
+ team=document.getElementById("team").value.trim();
+ if(!team){alert("Enter your team name.");return}
+ document.getElementById("start").style.display="none";
+ document.getElementById("hunt").style.display="block";
+ document.getElementById("hud").style.display="flex";
+ document.getElementById("teamHud").textContent=team;
+ timer=setInterval(()=>{time--;clock();if(time<=0){clearInterval(timer);timeUp()}},1000);
+ render();
+}
+function clock(){document.getElementById("clock").textContent=String(Math.floor(time/60)).padStart(2,"0")+":"+String(time%60).padStart(2,"0")}
+function drawMap(){
+ document.getElementById("lockerMap").innerHTML=rooms.map((r,i)=>{
+  let cls=i<room?"open":i===room?"current":"locked";
+  let icon=i<room?"🔓":i===room?"🔒":"🔒";
+  let status=i<room?"KEY USED":i===room?"CURRENT":"LOCKED";
+  return `<div class="locker ${cls}"><div class="icon">${icon}</div><small>${r.name}</small><div class="status">${status}</div></div>`
+ }).join("");
+}
+function render(){
+ locked=false;let r=rooms[room];
+ document.getElementById("tag").textContent=r.tag;document.getElementById("title").textContent=r.name;
+ document.getElementById("level").textContent=room+1;document.getElementById("desc").textContent=r.desc;
+ document.getElementById("bar").style.width=(room/6*100)+"%";drawMap();
+ let c=document.getElementById("content");c.innerHTML="";
+ if(r.type==="records")records(c);
+ if(r.type==="worker")worker(c);
+ if(r.type==="vault")vault(c);
+ if(r.type==="accountant")accountant(c);
+ if(r.type==="job")job(c);
+ if(r.type==="boss")boss(c);
+}
+function rewardKey(){
+ keys++;score+=100;document.getElementById("keyCount").textContent=keys;document.getElementById("score").textContent=score;
+}
+function feedback(ok,msg){
+ let f=document.createElement("div");f.className="feedback "+(ok?"good":"bad");f.innerHTML=msg;document.getElementById("content").appendChild(f);
+ if(ok)showKey();
+}
+function showKey(){
+ locked=true;
+ let c=document.getElementById("content");
+ let a=document.createElement("div");
+ a.className="keyAnimation";
+ a.style.display="block";
+ a.innerHTML=`<div class="keyGlow">🗝️</div><div class="ring">KEY ${keys+1} RECOVERED!</div>`;
+ c.appendChild(a);
+
+ setTimeout(()=>{
+   rewardKey();
+   showUnlock();
+ },1850);
+}
+
+function showUnlock(){
+ let c=document.getElementById("content");
+ let clue=nextClues[keys-1];
+
+ if(!clue){
+   finish();
+   return;
+ }
+
+ /* Show the clue DIRECTLY on the page.
+    This avoids relying on the popup/modal and makes the clue visible
+    on desktop and mobile browsers. */
+ c.innerHTML += `
+   <div id="cluePanel" class="card" style="
+      margin:24px auto;
+      max-width:850px;
+      text-align:center;
+      border:2px solid var(--gold);
+      background:linear-gradient(145deg,#211b0b,#13243a);
+      box-shadow:0 0 35px #f6c45322;
+   ">
+     <div style="font-size:42px">🔑</div>
+     <h2 style="color:var(--gold);margin:5px 0 12px">NEXT CLUE</h2>
+     <p style="font-size:18px;line-height:1.6;color:#eef6ff">${clue.text}</p>
+     <div id="clueOptions" class="choiceGrid" style="margin-top:20px"></div>
+     <div id="clueFeedback"></div>
+   </div>`;
+
+ let box=document.getElementById("clueOptions");
+ box.innerHTML=clue.options.map((opt,i)=>
+   `<button class="choice" onclick="chooseNextRoom(${i})">${opt}</button>`
+ ).join("");
+
+ document.getElementById("cluePanel").scrollIntoView({
+   behavior:"smooth",
+   block:"center"
+ });
+}
+
+function chooseNextRoom(i){
+ let clue=nextClues[keys-1];
+ let fb=document.getElementById("clueFeedback");
+
+ if(i===clue.answer){
+   fb.innerHTML=`<div class="feedback good">
+     🔓 <b>That's it!</b> You found the right clue. Let's investigate!
+   </div>`;
+
+   document.querySelectorAll("#clueOptions .choice").forEach((b,index)=>{
+     b.disabled=true;
+     if(index===i) b.classList.add("correct");
+   });
+
+   setTimeout(()=>{
+     room++;
+     render();
+     window.scrollTo({top:0,behavior:"smooth"});
+   },900);
+ }else{
+   fb.innerHTML=`<div class="feedback bad">
+     🔎 <b>Not here!</b> Even our detective instincts need a little help. Read the clue again.
+   </div>`;
+ }
+}
+
+function records(c){
+ c.innerHTML=`<div class="board">
+ <div class="card clickCard" onclick="recordsPick(this,'units')"><h3>📦 Units</h3><p>School uniforms: 1,200 units<br>Formal shirts: 800 units</p></div>
+ <div class="card clickCard" onclick="recordsPick(this,'hours')"><h3>👷 Labour Hours</h3><p>School uniforms: 2,400 hours<br>Formal shirts: 1,600 hours</p></div>
+ <div class="card clickCard" onclick="recordsPick(this,'wages')"><h3>💵 Machine Hours</h3><p>School uniforms: 3,000 hours<br>Formal shirts: 2,000 hours</p></div>
+ </div><div class="lockbox"><b>🔎 FIND THE FIRST KEY</b><p>The manager wants the basis that measures the labour effort used by each job.</p></div>`;
+}
+function recordsPick(el,v){
+ if(locked)return;
+ if(v==="hours"){el.classList.add("selected");feedback(true,"🔎 <b>FIRST CLUE SOLVED!</b><br>The labour-time record measures the effort used by each job. You have found the first key.");}
+ else {el.classList.add("wrong");feedback(false,"Read the manager's clue carefully. He wants a basis that measures <b>labour effort</b>.")}
+}
+function worker(c){
+ c.innerHTML=`<div class="board">
+ <div class="card"><h3>🔑 Locker A</h3><p>Job: School Uniform<br>Labour time: <b>2 hours</b></p><button class="secondary" onclick="workerPick('A')">SEARCH</button></div>
+ <div class="card"><h3>🔑 Locker B</h3><p>Job: Designer Jacket<br>Labour time: <b>6 hours</b></p><button class="secondary" onclick="workerPick('B')">SEARCH</button></div>
+ <div class="card"><h3>🗒️ NOTE</h3><p>“When the same hourly rate applies, the job using more labour time absorbs more overhead.”</p></div>
+ </div>`;
+}
+function workerPick(v){
+ if(locked)return;
+ if(v==="B")feedback(true,"👷 <b>SECOND KEY RECOVERED!</b><br>The designer jacket uses 6 labour hours. At the same Labour Hour Rate, it absorbs more overhead than the 2-hour uniform.");
+ else feedback(false,"The note says to compare labour time. Which job uses more labour hours?")}
+function keypad(){
+ return `<div class="lockbox"><b>🔐 ENTER THE VAULT CODE</b><div class="display" id="display">—</div><div class="keys">
+ ${[1,2,3,4,5,6,7,8,9].map(n=>`<button onclick="press(${n})">${n}</button>`).join("")}
+ <button class="clear" onclick="clearCode()">C</button><button onclick="press(0)">0</button><button class="ok" onclick="vaultCheck()">UNLOCK</button>
+ </div></div>`
+}
+function vault(c){
+ code="";
+ c.innerHTML=`<div class="calcCard"><h3>🏭 FACTORY FIGURES</h3><p>Factory overhead = <b>₹60,000</b><br>Total labour hours = <b>3,000 hours</b></p><p class="formulaHint">The vault asks: “What amount of overhead belongs to one labour hour?”</p></div>${keypad()}`;
+}
+function press(n){if(code.length<4){code+=n;document.getElementById("display").textContent=code}}
+function clearCode(){code="";document.getElementById("display").textContent="—"}
+function vaultCheck(){
+ if(locked)return;
+ if(code==="20")feedback(true,"🔐 <b>VAULT CRACKED!</b><br>You discovered the Labour Hour Rate: ₹60,000 ÷ 3,000 = <b>₹20 per labour hour</b>.");
+ else{let f=document.createElement("div");f.className="feedback bad";f.innerHTML="The vault rejected the code. Think about the amount of overhead represented by <b>one labour hour</b>.";document.getElementById("content").appendChild(f)}
+}
+function accountant(c){
+ c.innerHTML=`<div class="quote"><b>Junior Accountant's Note:</b><br><br>“I charged ₹60,000 overhead using 3,000 <b>units</b> and obtained ₹20 per unit. I think the costing sheet is correct.”</div>
+ <div class="card" style="margin-top:18px"><h3>📋 Factory instruction</h3><p>The production manager selected <b>Labour Hour Rate</b> as the absorption method.</p><p><b>Detective task:</b>What did the accountant use wrongly?</p></div>
+ <div class="choiceGrid"><button class="choice" onclick="accountPick('base')">📦 He used <b>units</b> as the base</button><button class="choice" onclick="accountPick('amount')">💵 He used ₹60,000 overhead</button><button class="choice" onclick="accountPick('number')">🔢 He used 3,000</button><button class="choice" onclick="accountPick('math')">➗ He divided one amount by another</button></div>`;
+}
+function accountPick(v){
+ if(locked)return;
+ if(v==="base")feedback(true,"🕵️ <b>FOURTH KEY RECOVERED!</b><br>The mistake is the <b>choice of base</b>. The factory selected Labour Hour Rate, so the overhead must be related to labour hours, not units.");
+ else {let f=document.createElement("div");f.className="feedback bad";f.innerHTML="The arithmetic itself is not the clue. Look for the part that conflicts with the <b>Labour Hour Rate</b> method.";document.getElementById("content").appendChild(f)}
+}
+function job(c){
+ c.innerHTML=`<div class="calcCard"><div class="brand">MISSING JOB FILE</div><h3>👔 SCHOOL UNIFORM ORDER</h3><p>The production supervisor gives you only the evidence needed to recover the missing amount.</p>
+ <div class="board" style="grid-template-columns:1fr 1fr"><div class="card"><h3>👷 LABOUR TIME</h3><p style="font-size:28px;color:var(--gold);font-weight:900">25 HOURS</p></div><div class="card"><h3>📈 ABSORPTION RATE</h3><p style="font-size:28px;color:var(--cyan);font-weight:900">₹20 / HOUR</p></div></div>
+ <p><b>The overhead amount has been erased.</b><br>Recover the missing amount to open the file.</p>
+ <input class="answer" id="jobAns" inputmode="numeric" placeholder="Enter amount"><br><br><button class="primary" onclick="jobCheck()">🔓 RECOVER FILE</button></div>`;
+}
+function jobCheck(){
+ if(locked)return;
+ let v=document.getElementById("jobAns").value.replace(/₹|,/g,"").trim();
+ if(v==="500")feedback(true,"📁 <b>FIFTH KEY RECOVERED!</b><br>The missing overhead is <b>₹500</b>. The job used 25 labour hours and the established rate is ₹20 per labour hour.");
+ else{let f=document.createElement("div");f.className="feedback bad";f.innerHTML="The file is still locked. Use the two pieces of evidence in the file and work out the missing overhead.";document.getElementById("content").appendChild(f)}
+}
+function boss(c){
+ c.innerHTML=`<div class="calcCard"><div style="font-size:50px">🏆</div><h3>FINAL TREASURE LOCK</h3><p>A new production unit sends a completely fresh case.</p>
+ <div class="board" style="grid-template-columns:repeat(3,1fr)">
+ <div class="card"><h3>🏭 OVERHEAD</h3><p style="font-size:24px;color:var(--gold);font-weight:900">₹90,000</p></div>
+ <div class="card"><h3>👷 TOTAL LABOUR</h3><p style="font-size:24px;color:var(--cyan);font-weight:900">4,500 hours</p></div>
+ <div class="card"><h3>📁 JOB X</h3><p style="font-size:24px;color:var(--purple);font-weight:900">40 hours</p></div>
+ </div>
+ <p><b>Final task:</b> Recover the amount of overhead that should be absorbed by Job X.</p>
+ <input class="answer" id="bossAns" inputmode="numeric" placeholder="Final amount ₹"><br><br><button class="primary" onclick="bossCheck()">🗝️ OPEN THE TREASURE</button></div>`;
+}
+function bossCheck(){
+ if(locked)return;
+ let v=document.getElementById("bossAns").value.replace(/₹|,/g,"").trim();
+ if(v==="800"){score+=100;document.getElementById("score").textContent=score;locked=true;setTimeout(finish,500)}
+ else{let f=document.createElement("div");f.className="feedback bad";f.innerHTML="The final lock requires you to work through the new case: first discover the Labour Hour Rate, then determine Job X's absorbed overhead.";document.getElementById("content").appendChild(f)}
+}
+function finish(){
+ clearInterval(timer);document.getElementById("hunt").style.display="none";document.getElementById("final").style.display="block";
+ document.getElementById("finalTeam").textContent="Team: "+team;
+ document.getElementById("finalScore").textContent="₹"+(50000+score*10).toLocaleString("en-IN");
+}
+function timeUp(){
+ clearInterval(timer);document.getElementById("hunt").style.display="none";document.getElementById("final").style.display="block";
+ document.getElementById("finalTeam").textContent="Team: "+team;
+ document.getElementById("finalScore").textContent="TREASURE LOCKED";
+ document.querySelector(".final h1").textContent="TIME IS UP";
+ document.querySelector(".treasure").innerHTML="<div class='cash'>🔒 The treasure chest remains locked</div>";
+}
+</script>
+</body>
+</html>
